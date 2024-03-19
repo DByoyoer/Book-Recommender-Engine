@@ -1,14 +1,21 @@
 from sqlalchemy import create_engine
 import pandas as pd
-import numpy as np
+from models import Base
+from models.book import Book
+from models.user import User
+from models.author import Author
+from models.rating import Rating
+from models.book_genre import Genre
+from models.reading_list import ReadingList
 
 
-DATA_DIR = "good_books_10k_extended/"
+DATA_DIR = "data/good_books_10k_extended/"
 BOOK_FILE_NAME = DATA_DIR + "books_enriched.csv"
 
 
 def main():
-    engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)
+    engine = create_engine("sqlite+pysqlite:///data/db/test.db", echo=True)
+    Base.metadata.create_all(engine)
     df = pd.read_csv(
         BOOK_FILE_NAME,
         index_col='book_id'
@@ -18,6 +25,7 @@ def main():
         "index",
         "average_rating",
         "books_count",
+        "ratings_count",
         "ratings_1",
         "ratings_2",
         "ratings_3",
@@ -35,6 +43,10 @@ def main():
     df["authors"] = df["authors"].apply(eval)
     df["authors_2"] = df["authors_2"].apply(eval)
     df["genres"] = df["genres"].apply(eval)
+
+
+
+    print(df.columns)
     
     
 
