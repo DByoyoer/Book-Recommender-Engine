@@ -2,15 +2,15 @@ from typing import List
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from . import BaseModel
-from .book import Book, book_author_association
+from . import Base
+from .book import book_author_association
 
 # TODO: Consider migrating to a contributor table to have different roles (e.g Author, illustrator, editor, etc)
-class Author(BaseModel):
-    __tablename__ = "authors"
+class Author(Base):
+    __tablename__ = "author"
 
-    id: Mapped[int] = mapped_column(primaryKey = True)
+    id: Mapped[int] = mapped_column(primary_key = True)
     name: Mapped[str]
 
-    books: Mapped[List[Book]] = relationship(secondary=book_author_association, back_populates="authors")
+    books: Mapped[List["Book"]] = relationship(secondary=book_author_association, back_populates="authors")
 

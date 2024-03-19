@@ -3,32 +3,28 @@ from typing import Optional, List
 from sqlalchemy import ForeignKey, String, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from . import BaseModel
-from .author import Author
-from .book_genre import Genre
+from . import Base
 
-book_author_association = Table("book_authors", BaseModel.metadata,
-                                Column("book_id", ForeignKey("books.id"), primary_key=True),
-                                Column("author_id", ForeignKey("authors.id"), primary_key=True)
+book_author_association = Table("book_authors", Base.metadata,
+                                Column("book_id", ForeignKey("book.id"), primary_key=True),
+                                Column("author_id", ForeignKey("author.id"), primary_key=True)
                                 )
 
-book_genre_association = Table("book_genre", BaseModel.metadata,
-                               Column("book_id", ForeignKey("books.id"), primary_key=True),
-                               Column("genre_id", ForeignKey("genres.id"), primary_key=True)
+book_genre_association = Table("book_genre", Base.metadata,
+                               Column("book_id", ForeignKey("book.id"), primary_key=True),
+                               Column("genre_id", ForeignKey("genre.id"), primary_key=True)
                                )
 
 
-
-
 # noinspection SpellCheckingInspection
-class Book(BaseModel):
-    __tablename__ = "books"
+class Book(Base):
+    __tablename__ = "book"
     id: Mapped[int] = mapped_column(primary_key=True)
     isbn: Mapped[Optional[str]] = mapped_column(String(12))
-    lang_code = Mapped[Optional[str]] = mapped_column(String(10))
+    lang_code: Mapped[str | None] = mapped_column(String(10))
     title: Mapped[str]
-    description: Mapped[Optional[str]]
-    cover_url: Mapped[Optional[str]]
-    original_publication_year: Mapped[Optional[int]]
-    authors: Mapped[List[Author]] = relationship(secondary=book_author_association, back_populates="books")
-    genres: Mapped[List[Genre]] = relationship(secondary=book_genre_association, back_populates="books")
+    description: Mapped[str | None]
+    cover_url: Mapped[str | None]
+    original_publication_year: Mapped[int | None]
+    authors: Mapped[List["Author"]] = relationship(secondary=book_author_association, back_populates="books")
+    genres: Mapped[List["Genre"]] = relationship(secondary=book_genre_association, back_populates="books")
