@@ -71,6 +71,11 @@ def main():
             original_publication_year=int(row.original_publication_year) if pd.notna(row.original_publication_year) else None,
         )
 
+        book_authors = []
+        for author in row.authors:
+            book_authors.append(Author(name=author))
+
+        book.authors = book_authors
 
         books.append(book)
         # Insert book into book table getting the generated ID
