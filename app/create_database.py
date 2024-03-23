@@ -44,8 +44,23 @@ def create_book_df():
 
 def create_ratings_df():
     df = pd.read_csv(RATINGS_FILE_NAME)
-
     return df
+
+
+def create_reading_list_df():
+    df = pd.read_csv(READING_LIST_FILE_NAME)
+    return df
+
+
+def create_fake_user_df(ratings_df: pd.DataFrame, reading_list_df: pd.DataFrame):
+    ratings_user_ids = set(ratings_df["user_id"])
+    reading_list_user_ids = set(reading_list_df["user_id"])
+
+    # TODO: Find nicer way of doing this, low priority though
+    user_ids = list(ratings_user_ids.union(reading_list_user_ids))
+    usernames = [f"User_{user_id}" for user_id in user_ids]
+
+    return pd.DataFrame({"user_id": user_ids, "username": usernames})
 
 
 def main():
