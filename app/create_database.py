@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, exc
 import pandas as pd
 from sqlalchemy.orm import Session
 
@@ -50,37 +50,55 @@ def create_ratings_df():
 
 def main():
     engine = create_engine("sqlite+pysqlite:///data/db/test.db")
+
+    # Workaround for disk I/O error when trying to use begin_nested() to handle database integrity errors in the creation code
+    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#pysqlite-serializable
+    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#sqlite-concurrency
+    @event.listens_for(engine, "connect")
+    def do_connect(dbapi_connection, connection_record):
+        # disable pysqlite's emitting of the BEGIN statement entirely.
+        # also stops it from emitting COMMIT before any DDL.
+        dbapi_connection.isolation_level = None
+
+    @event.listens_for(engine, "begin")
+    def do_begin(conn):
+        # emit our own BEGIN
+        conn.exec_driver_sql("BEGIN")
+
     Base.metadata.create_all(engine)
 
     book_df = create_book_df()
     ratings_df = create_ratings_df()
-    books = list()
+    reading_list_df = create_reading_list_df()
+    fake_user_df = create_fake_user_df(ratings_df, reading_list_df)
 
-    for row in book_df.itertuples():
-        # TODO: See if this type manipulation can be done better
-        a = type(row)
-        # row = a._make(map(lambda x: x if pd.notna(x) else None, row))
-        book = Book(
-            id=row.book_id,
-            title=row.title if pd.notna(row.title) else None,
-            pages=int(row.pages) if pd.notna(row.pages) else None,
-            isbn=row.isbn if pd.notna(row.isbn) else None,
-            lang_code=row.language_code if pd.notna(row.language_code) else None,
-            description=row.description if pd.notna(row.description) else None,
-            cover_url=row.image_url if pd.notna(row.image_url) else None,
-            original_publication_year=int(row.original_publication_year) if pd.notna(row.original_publication_year) else None,
-        )
-
-        book_authors = []
-        for author in row.authors:
-            book_authors.append(Author(name=author))
-
-        book.authors = book_authors
-
-        books.append(book)
-        # Insert book into book table getting the generated ID
     with Session(engine) as session, session.begin():
-        session.add_all(books)
+        for row in book_df.itertuples():
+            # TODO: See if this type manipulation can be done better
+            # a = type(row)
+            # row = a._make(map(lambda x: x if pd.notna(x) else None, row))
+            book = Book(
+                id=row.book_id,
+                title=row.title if pd.notna(row.title) else None,
+                pages=int(row.pages) if pd.notna(row.pages) else None,
+                isbn=row.isbn if pd.notna(row.isbn) else None,
+                lang_code=row.language_code if pd.notna(row.language_code) else None,
+                description=row.description if pd.notna(row.description) else None,
+                cover_url=row.image_url if pd.notna(row.image_url) else None,
+                original_publication_year=int(row.original_publication_year) if pd.notna(
+                    row.original_publication_year
+                ) else None,
+            )
+
+            book_authors = [Author(name=name) for name in row.authors]
+
+            book.authors = book_authors
+            try:
+                with session.begin_nested():
+                    session.add(book)
+            except exc.IntegrityError:
+                print(f"Skipped book with id {book.id}")
+
         # Insert authors into author table getting generated id
         # Insert book id and author id into the book_genre_association?
         # Same for genres
