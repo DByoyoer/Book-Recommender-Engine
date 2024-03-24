@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, event, exc
+from sqlalchemy import create_engine, event, exc, select
 import pandas as pd
 from sqlalchemy.orm import Session
 
@@ -105,14 +105,25 @@ def main():
                 ) else None,
             )
 
-            book_authors = [Author(name=name) for name in row.authors]
-
-            book.authors = book_authors
             try:
                 with session.begin_nested():
                     session.add(book)
-            except exc.IntegrityError:
-                print(f"Skipped book with id {book.id}")
+                    for name in row.authors:
+                        name = " ".join(name.split())
+                        author = session.scalar(select(Author).where(Author.name == name))
+                        if author is None:
+                            author = Author(name=name)
+                            session.add(author)
+                        # A few books have the same author listed twice
+                        # Maybe an author/secondary role type of thing
+                        # For now ignore the duplicate name in list
+                        if author not in book.authors:
+                            book.authors.append(author)
+            except exc.IntegrityError as error:
+                print(f"Error: {error} when inserting book {book}")
+                print(f"Book: {book.title}, Authors: {[author.name for author in book.authors]}")
+
+
 
         # Insert authors into author table getting generated id
         # Insert book id and author id into the book_genre_association?
