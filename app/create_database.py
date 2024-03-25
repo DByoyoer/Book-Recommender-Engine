@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, event, exc, select
+from sqlalchemy import create_engine, event, exc, select, Engine
 import pandas as pd
 from sqlalchemy.orm import Session
 
@@ -63,30 +63,8 @@ def create_fake_user_df(ratings_df: pd.DataFrame, reading_list_df: pd.DataFrame)
     return pd.DataFrame({"user_id": user_ids, "username": usernames})
 
 
-def main():
-    engine = create_engine("sqlite+pysqlite:///data/db/test.db")
-
-    # Workaround for disk I/O error when trying to use begin_nested() to handle database integrity errors in the creation code
-    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#pysqlite-serializable
-    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#sqlite-concurrency
-    @event.listens_for(engine, "connect")
-    def do_connect(dbapi_connection, connection_record):
-        # disable pysqlite's emitting of the BEGIN statement entirely.
-        # also stops it from emitting COMMIT before any DDL.
-        dbapi_connection.isolation_level = None
-
-    @event.listens_for(engine, "begin")
-    def do_begin(conn):
-        # emit our own BEGIN
-        conn.exec_driver_sql("BEGIN")
-
-    Base.metadata.create_all(engine)
-
+def populate_book_data(engine:Engine):
     book_df = create_book_df()
-    ratings_df = create_ratings_df()
-    reading_list_df = create_reading_list_df()
-    fake_user_df = create_fake_user_df(ratings_df, reading_list_df)
-
     with Session(engine) as session, session.begin():
         for row in book_df.itertuples():
             # TODO: See if this type manipulation can be done better
@@ -109,6 +87,7 @@ def main():
                 with session.begin_nested():
                     session.add(book)
                     for name in row.authors:
+                        # TODO: Move this to create_book_df
                         name = " ".join(name.split())
                         author = session.scalar(select(Author).where(Author.name == name))
                         if author is None:
@@ -122,6 +101,32 @@ def main():
             except exc.IntegrityError as error:
                 print(f"Error: {error} when inserting book {book}")
                 print(f"Book: {book.title}, Authors: {[author.name for author in book.authors]}")
+
+def main():
+    engine = create_engine("sqlite+pysqlite:///data/db/test.db")
+
+    # Workaround for disk I/O error when trying to use begin_nested() to handle database integrity errors in the creation code
+    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#pysqlite-serializable
+    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#sqlite-concurrency
+    @event.listens_for(engine, "connect")
+    def do_connect(dbapi_connection, connection_record):
+        # disable pysqlite's emitting of the BEGIN statement entirely.
+        # also stops it from emitting COMMIT before any DDL.
+        dbapi_connection.isolation_level = None
+
+    @event.listens_for(engine, "begin")
+    def do_begin(conn):
+        # emit our own BEGIN
+        conn.exec_driver_sql("BEGIN")
+
+    Base.metadata.create_all(engine)
+
+    populate_book_data(engine)
+    ratings_df = create_ratings_df()
+    reading_list_df = create_reading_list_df()
+    fake_user_df = create_fake_user_df(ratings_df, reading_list_df)
+
+
 
 
 
