@@ -13,7 +13,7 @@ class Rating(Base):
     rating_text: Mapped[str | None]
     rating: Mapped[int]
     date_created: Mapped[datetime] = mapped_column(server_default=func.now())
-    date_updated: Mapped[datetime] = mapped_column(onupdate=func.now())
+    date_updated: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
     user: Mapped["User"] = relationship(back_populates="ratings")
 
