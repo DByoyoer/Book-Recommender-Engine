@@ -52,18 +52,7 @@ def create_reading_list_df():
     return df
 
 
-def create_fake_user_df(ratings_df: pd.DataFrame, reading_list_df: pd.DataFrame):
-    ratings_user_ids = set(ratings_df["user_id"])
-    reading_list_user_ids = set(reading_list_df["user_id"])
-
-    # TODO: Find nicer way of doing this, low priority though
-    user_ids = list(ratings_user_ids.union(reading_list_user_ids))
-    usernames = [f"User_{user_id}" for user_id in user_ids]
-
-    return pd.DataFrame({"user_id": user_ids, "username": usernames})
-
-
-def populate_book_data(engine:Engine):
+def populate_book_data(engine: Engine):
     book_df = create_book_df()
     with Session(engine) as session, session.begin():
         for row in book_df.itertuples():
@@ -102,6 +91,38 @@ def populate_book_data(engine:Engine):
                 print(f"Error: {error} when inserting book {book}")
                 print(f"Book: {book.title}, Authors: {[author.name for author in book.authors]}")
 
+
+def populate_user_data(engine: Engine):
+    ratings_df = create_ratings_df()
+    reading_list_df = create_reading_list_df()
+
+    ratings_user_ids = set(ratings_df["user_id"])
+    reading_list_user_ids = set(reading_list_df["user_id"])
+
+    # TODO: Find nicer way of doing this, low priority though
+    user_ids = list(ratings_user_ids.union(reading_list_user_ids))
+    users = [User(id=user_id, username=f"User_{user_id}") for user_id in user_ids]
+
+    # Insert user data
+    try:
+        with Session(engine) as session, session.begin():
+            session.add_all(users)
+    except exc.IntegrityError:
+        print("Skipped adding users.")
+        pass
+    # for row in ratings_df.itertuples():
+    #     try:
+    #         with session.begin_nested():
+    #             rating = Rating(book_id = row.book_id, user_id = row.user_id, rating = row.rating)
+    #             session.add(rating)
+    #             print(count)
+    #             count += 1
+    #     except exc.IntegrityError as error:
+    #         print(f"Skipped rating with user_id {rating.user_id} book_id: {rating.book_id}")
+    #         print(error)
+
+
+
 def main():
     engine = create_engine("sqlite+pysqlite:///data/db/test.db")
 
@@ -122,17 +143,11 @@ def main():
     Base.metadata.create_all(engine)
 
     populate_book_data(engine)
-    ratings_df = create_ratings_df()
-    reading_list_df = create_reading_list_df()
-    fake_user_df = create_fake_user_df(ratings_df, reading_list_df)
+    populate_user_data(engine)
 
-
-
-
-
-        # Insert authors into author table getting generated id
-        # Insert book id and author id into the book_genre_association?
-        # Same for genres
+    # Insert authors into author table getting generated id
+    # Insert book id and author id into the book_genre_association?
+    # Same for genres
 
 
 if __name__ == "__main__":
