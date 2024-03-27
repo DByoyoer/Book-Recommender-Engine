@@ -20,7 +20,8 @@ book_genre_association = Table("book_genre", Base.metadata,
 # noinspection SpellCheckingInspection
 class Book(Base):
     __tablename__ = "book"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True),
+    good_reads_id: Mapped[int]
     isbn: Mapped[Optional[str]] = mapped_column(String(12))
     lang_code: Mapped[str | None] = mapped_column(String(10))
     pages: Mapped[int | None]
