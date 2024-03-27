@@ -17,11 +17,11 @@ RATINGS_FILE_NAME = DATA_DIR + "ratings.csv"
 READING_LIST_FILE_NAME = DATA_DIR + "to_read.csv"
 
 
-def create_book_df():
+def export_book_data():
     # column_list =["index","authors","average_rating","best_book_id","book_id","books_count","description","genres","goodreads_book_id","image_url","isbn","isbn13","language_code","original_publication_year","original_title","pages","publishDate","ratings_1","ratings_2","ratings_3","ratings_4","ratings_5","ratings_count","small_image_url","title","work_id","work_ratings_count","work_text_reviews_count","authors_2"]
     use_cols = ["authors", "best_book_id", "book_id", "description", "genres", "image_url", "isbn", "isbn13",
-                "language_code", "original_publication_year", "original_title", "pages", "publishDate",
-                "small_image_url", "title"]
+                "language_code", "original_publication_year", "pages", "title"]
+
     df = pd.read_csv(
         BOOK_FILE_NAME,
         usecols=use_cols,
@@ -29,9 +29,9 @@ def create_book_df():
                "original_publication_year": "Int16",
                },
     )
-
-    # There are some cases where original_title has no value but title has a value
-    df['original_title'] = df['original_title'].fillna(df['title'])
+    df = df[["book_id", "authors", "best_book_id", "title", "description", "isbn", "isbn13", "language_code", "genres",
+             "pages", "image_url",
+             "original_publication_year"]]
 
     # Convert columns that are lists to be actual python lists
     # Note: Relies on the format of the data to have python list syntax
@@ -69,7 +69,8 @@ def create_book_df():
     book_id_authors_df.rename(columns={"authors": "author_id"}, inplace=True)
     book_id_authors_df.to_csv("data/book_authors.csv", index=False)
 
-    df.drop(['genres', 'authors'], axis=1)
+    df.drop(['genres', 'authors'], axis=1, inplace=True)
+    df.rename(columns={"book_id": "id", "best_book_id": "goodreads_id"}, inplace=True)
     df.to_csv("data/book_data.csv", index=False)
 
     return df
@@ -178,4 +179,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    export_book_data()

@@ -20,13 +20,14 @@ book_genre_association = Table("book_genre", Base.metadata,
 # noinspection SpellCheckingInspection
 class Book(Base):
     __tablename__ = "book"
-    id: Mapped[int] = mapped_column(primary_key=True),
-    good_reads_id: Mapped[int]
-    isbn: Mapped[Optional[str]] = mapped_column(String(12))
-    lang_code: Mapped[str | None] = mapped_column(String(10))
-    pages: Mapped[int | None]
+    id: Mapped[int] = mapped_column(primary_key=True)
+    goodreads_id: Mapped[int]
     title: Mapped[str]
     description: Mapped[str | None]
+    isbn: Mapped[str | None] = mapped_column(String(12))
+    isbn13: Mapped[str | None] = mapped_column(String(15))
+    lang_code: Mapped[str | None] = mapped_column(String(10))
+    pages: Mapped[int | None]
     cover_url: Mapped[str | None]
     original_publication_year: Mapped[int | None]
     authors: Mapped[List["Author"]] = relationship(secondary=book_author_association, back_populates="books")
