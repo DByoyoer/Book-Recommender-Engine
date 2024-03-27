@@ -38,20 +38,39 @@ def create_book_df():
     df["authors"] = df["authors"].apply(eval)
     df["genres"] = df["genres"].apply(eval)
 
-    exploded_df = df["genres"].explode()
-    genres = exploded_df.unique()
+    exploded_genre_df = df["genres"].explode()
+    genres = exploded_genre_df.unique()
     genre_df = pd.DataFrame(genres, columns=["name"])
-    genre_df.index.rename("genre_id", inplace=True)
+    genre_df.index.rename("id", inplace=True)
     genre_df.to_csv("data/genres.csv")
 
     book_genre_associations = {"book_id": [], "genre_id": []}
     for row in df.itertuples(name="book"):
         for genre in row.genres:
             book_genre_associations["book_id"].append(row.book_id)
-            book_genre_associations["genre_id"].append(genre_df.index[genre_df["name"]==genre].to_list()[0])
+            book_genre_associations["genre_id"].append(genre_df.index[genre_df["name"] == genre].to_list()[0])
 
     book_genre_associations_df = pd.DataFrame(book_genre_associations)
     book_genre_associations_df.to_csv("data/book_genre.csv", index=False)
+
+    book_id_authors_df = df[["book_id", "authors"]]
+    book_id_authors_df = book_id_authors_df.explode("authors")
+
+    # There are extra spaces sometimes in author names, this removes them
+    book_id_authors_df["authors"] = book_id_authors_df["authors"].apply(lambda name: " ".join(name.split()))
+
+    authors_df = pd.DataFrame(book_id_authors_df["authors"].unique(), columns=["name"])
+    authors_df.index.rename("id", inplace=True)
+    authors_df.to_csv("data/authors.csv")
+
+    book_id_authors_df["authors"] = book_id_authors_df["authors"].apply(
+        lambda x: authors_df.index[authors_df["name"] == x].to_list()[0]
+    )
+    book_id_authors_df.rename(columns={"authors": "author_id"}, inplace=True)
+    book_id_authors_df.to_csv("data/book_authors.csv", index=False)
+
+    df.drop(['genres', 'authors'], axis=1)
+    df.to_csv("data/book_data.csv", index=False)
 
     return df
 
