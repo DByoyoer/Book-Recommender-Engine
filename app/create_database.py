@@ -36,6 +36,8 @@ def export_book_data():
     # Convert columns that are lists to be actual python lists
     # Note: Relies on the format of the data to have python list syntax
     book_df["authors"] = book_df["authors"].apply(eval)
+    # Remove extra spaces in author names and add workaround to handle author attributed multiple times for a book
+    book_df["authors"] = book_df["authors"].apply(lambda l: set(map(lambda x: " ".join(x.split()), l)))
     book_df["genres"] = book_df["genres"].apply(eval)
 
     exploded_genre_df = book_df["genres"].explode()
@@ -56,8 +58,6 @@ def export_book_data():
     book_id_authors_df = book_df[["book_id", "authors"]]
     book_id_authors_df = book_id_authors_df.explode("authors")
 
-    # There are extra spaces sometimes in author names, this removes them
-    book_id_authors_df["authors"] = book_id_authors_df["authors"].apply(lambda name: " ".join(name.split()))
 
     authors_df = pd.DataFrame(book_id_authors_df["authors"].unique(), columns=["name"])
     authors_df.index.rename("id", inplace=True)
