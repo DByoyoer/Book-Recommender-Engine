@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, event, exc, select, Engine
+from sqlalchemy import create_engine, event, exc, select
 import pandas as pd
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from models import Base
 from models.book import Book
@@ -15,6 +15,7 @@ BOOK_FILE_NAME = DATA_DIR + "books_enriched.csv"
 RATINGS_FILE_NAME = DATA_DIR + "ratings.csv"
 READING_LIST_FILE_NAME = DATA_DIR + "to_read.csv"
 
+DBSession = scoped_session(sessionmaker())
 
 def create_book_df():
     df = pd.read_csv(
@@ -52,7 +53,7 @@ def create_reading_list_df():
     return df
 
 
-def populate_book_data(engine: Engine):
+def populate_book_data(engine):
     book_df = create_book_df()
     with Session(engine) as session, session.begin():
         for row in book_df.itertuples():
@@ -92,7 +93,7 @@ def populate_book_data(engine: Engine):
                 print(f"Book: {book.title}, Authors: {[author.name for author in book.authors]}")
 
 
-def populate_user_data(engine: Engine):
+def populate_user_data(engine):
     ratings_df = create_ratings_df()
     reading_list_df = create_reading_list_df()
 
@@ -110,16 +111,12 @@ def populate_user_data(engine: Engine):
     except exc.IntegrityError:
         print("Skipped adding users.")
         pass
-    # for row in ratings_df.itertuples():
-    #     try:
-    #         with session.begin_nested():
-    #             rating = Rating(book_id = row.book_id, user_id = row.user_id, rating = row.rating)
-    #             session.add(rating)
-    #             print(count)
-    #             count += 1
-    #     except exc.IntegrityError as error:
-    #         print(f"Skipped rating with user_id {rating.user_id} book_id: {rating.book_id}")
-    #         print(error)
+
+    ratings =  [{"book_id":row.book_id, "user_id": row.user_id, "rating":row.rating} for row in ratings_df.itertuples()]
+    # Use SQLAlchemy core for some speed
+    with engine.connect() as conn:
+        conn.execute(Rating.__table__.insert(), ratings)
+
 
 
 
