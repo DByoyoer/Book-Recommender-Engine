@@ -22,30 +22,30 @@ def export_book_data():
     use_cols = ["authors", "best_book_id", "book_id", "description", "genres", "image_url", "isbn", "isbn13",
                 "language_code", "original_publication_year", "pages", "title"]
 
-    df = pd.read_csv(
+    book_df = pd.read_csv(
         BOOK_FILE_NAME,
         usecols=use_cols,
         dtype={"pages": "Int16", "isbn": "string", "isbn13": "string", "publishDate": "string",
                "original_publication_year": "Int16",
                },
     )
-    df = df[["book_id", "authors", "best_book_id", "title", "description", "isbn", "isbn13", "language_code", "genres",
+    book_df = book_df[["book_id", "authors", "best_book_id", "title", "description", "isbn", "isbn13", "language_code", "genres",
              "pages", "image_url",
              "original_publication_year"]]
 
     # Convert columns that are lists to be actual python lists
     # Note: Relies on the format of the data to have python list syntax
-    df["authors"] = df["authors"].apply(eval)
-    df["genres"] = df["genres"].apply(eval)
+    book_df["authors"] = book_df["authors"].apply(eval)
+    book_df["genres"] = book_df["genres"].apply(eval)
 
-    exploded_genre_df = df["genres"].explode()
+    exploded_genre_df = book_df["genres"].explode()
     genres = exploded_genre_df.unique()
     genre_df = pd.DataFrame(genres, columns=["name"])
     genre_df.index.rename("id", inplace=True)
     genre_df.to_csv("data/genres.csv")
 
     book_genre_associations = {"book_id": [], "genre_id": []}
-    for row in df.itertuples(name="book"):
+    for row in book_df.itertuples(name="book"):
         for genre in row.genres:
             book_genre_associations["book_id"].append(row.book_id)
             book_genre_associations["genre_id"].append(genre_df.index[genre_df["name"] == genre].to_list()[0])
@@ -53,7 +53,7 @@ def export_book_data():
     book_genre_associations_df = pd.DataFrame(book_genre_associations)
     book_genre_associations_df.to_csv("data/book_genre.csv", index=False)
 
-    book_id_authors_df = df[["book_id", "authors"]]
+    book_id_authors_df = book_df[["book_id", "authors"]]
     book_id_authors_df = book_id_authors_df.explode("authors")
 
     # There are extra spaces sometimes in author names, this removes them
@@ -69,9 +69,9 @@ def export_book_data():
     book_id_authors_df.rename(columns={"authors": "author_id"}, inplace=True)
     book_id_authors_df.to_csv("data/book_authors.csv", index=False)
 
-    df.drop(['genres', 'authors'], axis=1, inplace=True)
-    df.rename(columns={"book_id": "id", "best_book_id": "goodreads_id"}, inplace=True)
-    df.to_csv("data/book_data.csv", index=False)
+    book_df.drop(['genres', 'authors'], axis=1, inplace=True)
+    book_df.rename(columns={"book_id": "id", "best_book_id": "goodreads_id"}, inplace=True)
+    book_df.to_csv("data/book_data.csv", index=False)
 
 
 def export_fake_user_data():
