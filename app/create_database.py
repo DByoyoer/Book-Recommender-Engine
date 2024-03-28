@@ -41,20 +41,15 @@ def export_book_data():
     # Remove extra spaces in author names and add workaround to handle author attributed multiple times for a book
     book_df["authors"] = book_df["authors"].apply(lambda l: set(map(lambda x: " ".join(x.split()), l)))
 
-    exploded_genre_df = book_df["genres"].explode()
-    genres = exploded_genre_df.unique()
-    genre_df = pd.DataFrame(genres, columns=["name"])
-    genre_df.index.rename("id", inplace=True)
-    genre_df.to_csv("data/genres.csv")
+    book_genres_df = book_df[["book_id", "genres"]].explode()
+    genres_df = pd.DataFrame(book_genres_df.unique(), columns=["name"])
+    genres_df.index.rename("id", inplace=True)
+    genres_df.to_csv("data/genres.csv")
 
-    book_genre_associations = {"book_id": [], "genre_id": []}
-    for row in book_df.itertuples(name="book"):
-        for genre in row.genres:
-            book_genre_associations["book_id"].append(row.book_id)
-            book_genre_associations["genre_id"].append(genre_df.index[genre_df["name"] == genre].to_list()[0])
-
-    book_genre_associations_df = pd.DataFrame(book_genre_associations)
-    book_genre_associations_df.to_csv("data/book_genre.csv", index=False)
+    book_genres_df["genres"] = book_genres_df["genres"].apply(
+        # Replace genre name with id generated in genre_df
+        lambda x: genres_df.index[genres_df["name"] == x].to_list()[0]
+    )
 
     # Create book author association dataframe
     book_authors_df = book_df[["book_id", "authors"]].explode("authors")
