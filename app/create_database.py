@@ -29,16 +29,17 @@ def export_book_data():
                "original_publication_year": "Int16",
                },
     )
+    # Reorder columns to be in same order as database table declaration
     book_df = book_df[["book_id", "authors", "best_book_id", "title", "description", "isbn", "isbn13", "language_code", "genres",
              "pages", "image_url",
              "original_publication_year"]]
 
-    # Convert columns that are lists to be actual python lists
-    # Note: Relies on the format of the data to have python list syntax
+    # Convert to python lists
     book_df["authors"] = book_df["authors"].apply(eval)
+    book_df["genres"] = book_df["genres"].apply(eval)
+
     # Remove extra spaces in author names and add workaround to handle author attributed multiple times for a book
     book_df["authors"] = book_df["authors"].apply(lambda l: set(map(lambda x: " ".join(x.split()), l)))
-    book_df["genres"] = book_df["genres"].apply(eval)
 
     exploded_genre_df = book_df["genres"].explode()
     genres = exploded_genre_df.unique()
