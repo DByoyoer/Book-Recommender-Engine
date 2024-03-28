@@ -56,19 +56,19 @@ def export_book_data():
     book_genre_associations_df = pd.DataFrame(book_genre_associations)
     book_genre_associations_df.to_csv("data/book_genre.csv", index=False)
 
-    book_id_authors_df = book_df[["book_id", "authors"]]
-    book_id_authors_df = book_id_authors_df.explode("authors")
+    # Create book author association dataframe
+    book_authors_df = book_df[["book_id", "authors"]].explode("authors")
 
-
-    authors_df = pd.DataFrame(book_id_authors_df["authors"].unique(), columns=["name"])
+    authors_df = pd.DataFrame(book_authors_df["authors"].unique(), columns=["name"])
     authors_df.index.rename("id", inplace=True)
     authors_df.to_csv("data/authors.csv")
 
-    book_id_authors_df["authors"] = book_id_authors_df["authors"].apply(
+    book_authors_df["authors"] = book_authors_df["authors"].apply(
+        # Replace author name with id generated in authors_df
         lambda x: authors_df.index[authors_df["name"] == x].to_list()[0]
     )
-    book_id_authors_df.rename(columns={"authors": "author_id"}, inplace=True)
-    book_id_authors_df.to_csv("data/book_authors.csv", index=False)
+    book_authors_df.rename(columns={"authors": "author_id"}, inplace=True)
+    book_authors_df.to_csv("data/book_authors.csv", index=False)
 
     book_df.drop(['genres', 'authors'], axis=1, inplace=True)
     book_df.rename(columns={"book_id": "id", "best_book_id": "goodreads_id"}, inplace=True)
