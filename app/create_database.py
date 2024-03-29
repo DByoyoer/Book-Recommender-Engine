@@ -17,7 +17,7 @@ RATINGS_FILE_NAME = DATA_DIR + "ratings.csv"
 READING_LIST_FILE_NAME = DATA_DIR + "to_read.csv"
 
 
-def export_book_data():
+def create_book_df() -> pd.DataFrame:
     # column_list =["index","authors","average_rating","best_book_id","book_id","books_count","description","genres","goodreads_book_id","image_url","isbn","isbn13","language_code","original_publication_year","original_title","pages","publishDate","ratings_1","ratings_2","ratings_3","ratings_4","ratings_5","ratings_count","small_image_url","title","work_id","work_ratings_count","work_text_reviews_count","authors_2"]
     use_cols = ["authors", "best_book_id", "book_id", "description", "genres", "image_url", "isbn", "isbn13",
                 "language_code", "original_publication_year", "pages", "title"]
@@ -30,9 +30,10 @@ def export_book_data():
                },
     )
     # Reorder columns to be in same order as database table declaration
-    book_df = book_df[["book_id", "authors", "best_book_id", "title", "description", "isbn", "isbn13", "language_code", "genres",
-             "pages", "image_url",
-             "original_publication_year"]]
+    book_df = book_df[
+        ["book_id", "authors", "best_book_id", "title", "description", "isbn", "isbn13", "language_code", "genres",
+         "pages", "image_url",
+         "original_publication_year"]]
 
     # Convert to python lists
     book_df["authors"] = book_df["authors"].apply(eval)
@@ -41,8 +42,21 @@ def export_book_data():
     # Remove extra spaces in author names and add workaround to handle author attributed multiple times for a book
     book_df["authors"] = book_df["authors"].apply(lambda l: set(map(lambda x: " ".join(x.split()), l)))
 
-    book_genres_df = book_df[["book_id", "genres"]].explode()
-    genres_df = pd.DataFrame(book_genres_df.unique(), columns=["name"])
+    return book_df
+
+
+def export_book_data(book_df: pd.DataFrame):
+    modified_book_df = book_df.drop(['genres', 'authors'], axis=1)
+    modified_book_df.rename(
+        columns={"book_id": "id", "best_book_id": "goodreads_id", "language_code": "lang_code",
+                 "image_url": "cover_url"}, inplace=True
+    )
+    modified_book_df.to_csv("data/books.csv", index=False)
+
+
+def export_genre_data(book_df: pd.DataFrame):
+    book_genres_df = book_df[["book_id", "genres"]].explode("genres")
+    genres_df = pd.DataFrame(book_genres_df["genres"].unique(), columns=["name"])
     genres_df.index.rename("id", inplace=True)
     genres_df.to_csv("data/genres.csv")
 
@@ -50,7 +64,11 @@ def export_book_data():
         # Replace genre name with id generated in genre_df
         lambda x: genres_df.index[genres_df["name"] == x].to_list()[0]
     )
+    book_genres_df.rename(columns={"genres": "genre_id"}, inplace=True)
+    book_genres_df.to_csv("data/book_genres.csv", index=False)
 
+
+def export_author_data(book_df: pd.DataFrame):
     # Create book author association dataframe
     book_authors_df = book_df[["book_id", "authors"]].explode("authors")
 
@@ -77,13 +95,27 @@ def export_fake_user_data():
     ratings_user_ids = set(ratings_df["user_id"])
     reading_list_user_ids = set(reading_list_df["user_id"])
 
-    # TODO: Find nicer way of doing this, low priority though
-    user_ids = list(ratings_user_ids.union(reading_list_user_ids))
+    user_ids = ratings_user_ids.union(reading_list_user_ids)
     user_data = [{"id": user_id, "username": f"User_{user_id}"} for user_id in user_ids]
     user_df = pd.DataFrame(user_data)
-    user_df.to_csv("data/user.csv", index=False)
+    user_df.to_csv("data/users.csv", index=False)
+
+
+def main():
+    engine = create_engine("sqlite+pysqlite:///data/db/test.db")
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    book_df = create_book_df()
+    print("Exporting book data")
+    export_book_data(book_df)
+    print("Exporting genre data")
+    export_genre_data(book_df)
+    print("Exporting author data")
+    export_author_data(book_df)
+    print("Exporting user data")
+    export_fake_user_data()
+
 
 
 if __name__ == "__main__":
-    export_book_data()
-    export_fake_user_data()
+    main()
