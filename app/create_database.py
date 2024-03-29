@@ -90,7 +90,6 @@ def export_reading_list_data():
     reading_list_df.to_csv("data/reading_list.csv", index=False)
 
 
-
 def export_rating_data():
     ratings_df = pd.read_csv(RATINGS_FILE_NAME)
     ratings_df["rating_text"] = ""
