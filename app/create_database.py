@@ -109,6 +109,7 @@ def export_fake_user_data():
     user_ids = ratings_user_ids.union(reading_list_user_ids)
     user_data = [{"id": user_id, "username": f"User_{user_id}"} for user_id in user_ids]
     user_df = pd.DataFrame(user_data)
+    user_df["date_created"] = datetime.utcnow()
     user_df.to_csv("data/users.csv", index=False)
 
 
