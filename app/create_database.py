@@ -1,7 +1,6 @@
-from sqlalchemy import create_engine, event, exc, select
+from sqlalchemy import create_engine
 import pandas as pd
-from sqlalchemy.orm import Session, scoped_session, sessionmaker
-import csv
+from datetime import datetime
 
 from models import Base
 from models.book import Book
@@ -83,9 +82,21 @@ def export_author_data(book_df: pd.DataFrame):
     book_authors_df.rename(columns={"authors": "author_id"}, inplace=True)
     book_authors_df.to_csv("data/book_authors.csv", index=False)
 
-    book_df.drop(['genres', 'authors'], axis=1, inplace=True)
-    book_df.rename(columns={"book_id": "id", "best_book_id": "goodreads_id"}, inplace=True)
-    book_df.to_csv("data/book_data.csv", index=False)
+
+def export_reading_list_data():
+    reading_list_df = pd.read_csv(READING_LIST_FILE_NAME)
+    reading_list_df["ranking"] = 0
+    reading_list_df["date_added"] = datetime.utcnow()
+    reading_list_df.to_csv("data/reading_list.csv", index=False)
+
+
+
+def export_rating_data():
+    ratings_df = pd.read_csv(RATINGS_FILE_NAME)
+    ratings_df["rating_text"] = ""
+    ratings_df["date_created"] = datetime.utcnow()
+    ratings_df["date_updated"] = datetime.utcnow()
+    ratings_df.to_csv("data/ratings.csv", index=False)
 
 
 def export_fake_user_data():
@@ -114,7 +125,11 @@ def main():
     export_author_data(book_df)
     print("Exporting user data")
     export_fake_user_data()
-
+    print("Exporting reading list data")
+    export_reading_list_data()
+    print("Exporting rating data")
+    export_rating_data()
+    print("Done")
 
 
 if __name__ == "__main__":
