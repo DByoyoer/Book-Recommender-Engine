@@ -1,19 +1,21 @@
-from sqlalchemy import create_engine
 import pandas as pd
 from datetime import datetime
 
+from sqlalchemy import create_engine
 from models import Base
-from models.book import Book
-from models.user import User
-from models.author import Author
-from models.rating import Rating
-from models.book_genre import Genre
-from models.reading_list import ReadingList
+from models import author
+from models import book
+from models import book_genre
+from models import rating
+from models import reading_list
+from models import user
+
 
 DATA_DIR = "data/good_books_10k_extended/"
 BOOK_FILE_NAME = DATA_DIR + "books_enriched.csv"
 RATINGS_FILE_NAME = DATA_DIR + "ratings.csv"
 READING_LIST_FILE_NAME = DATA_DIR + "to_read.csv"
+DATABASE_URI = "sqlite+pysqlite:///data/db/test.db"
 
 
 def create_book_df() -> pd.DataFrame:
@@ -113,8 +115,7 @@ def export_fake_user_data():
 
 
 def main():
-    engine = create_engine("sqlite+pysqlite:///data/db/test.db")
-    Base.metadata.drop_all(engine)
+    engine = create_engine(DATABASE_URI)
     Base.metadata.create_all(engine)
     book_df = create_book_df()
     print("Exporting book data")
