@@ -3,12 +3,12 @@ from datetime import datetime
 
 from sqlalchemy import create_engine
 from models import Base
-from models import author
-from models import book
-from models import book_genre
-from models import rating
-from models import reading_list
-from models import user
+from models import Author
+from models import Book
+from models import Genre
+from models import Rating
+from models import ReadingList
+from models import User
 
 
 DATA_DIR = "data/good_books_10k_extended/"
