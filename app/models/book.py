@@ -1,6 +1,7 @@
 from typing import Optional, List
 
-from sqlalchemy import ForeignKey, String, Table, Column
+from sqlalchemy import ForeignKey, String, Table, Column, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from . import Base
@@ -32,3 +33,18 @@ class Book(Base):
     original_publication_year: Mapped[int | None]
     authors: Mapped[List["Author"]] = relationship(secondary=book_author_association, back_populates="books")
     genres: Mapped[List["Genre"]] = relationship(secondary=book_genre_association, back_populates="books")
+
+    @classmethod
+    async def get_by_id(cls, db_session: AsyncSession, book_id: int):
+        book =  await db_session.get(cls, book_id)
+        return book
+
+    @classmethod
+    async def get_by_isbn(cls, db_session: AsyncSession, isbn: str):
+        book = (await db_session.scalars(select(cls).where(cls.isbn == isbn))).first()
+        return book
+
+    @classmethod
+    async def get_list(cls, db_session: AsyncSession, book_ids: list[int]):
+        result = await db_session.scalars(select(cls).where(cls.id.in_(list)))
+        return result.all()
