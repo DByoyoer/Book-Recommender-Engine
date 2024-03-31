@@ -2,13 +2,13 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 
-class Author(BaseModel):
+class AuthorSchema(BaseModel):
     id: int
     name: str
-    books: list[Book] = []
+    books: list[BookSchema] = []
 
-class Book(BaseModel):
+class BookSchema(BaseModel):
     id: int
     title: str
     genres: list[str]
-    authors: list[Author]
+    authors: list[AuthorSchema]
