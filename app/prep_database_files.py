@@ -1,8 +1,7 @@
+import asyncio
 import pandas as pd
 from datetime import datetime
-from sqlalchemy import create_engine
-
-from config import settings
+from services.database import sessionmanager
 from models import Base
 from models import Author
 from models import Book
@@ -109,9 +108,9 @@ def export_fake_user_data():
     user_df.to_csv("data/users.csv", index=False)
 
 
-def main():
-    engine = create_engine(settings.database_url, execution_options={"autocommit": False})
-    Base.metadata.create_all(engine)
+async def main():
+    async with sessionmanager.connect() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
     book_df = create_book_df()
     print("Exporting book data")
@@ -130,4 +129,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
