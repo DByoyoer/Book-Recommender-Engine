@@ -1,7 +1,8 @@
 import pandas as pd
 from datetime import datetime
-
 from sqlalchemy import create_engine
+
+from config import settings
 from models import Base
 from models import Author
 from models import Book
@@ -10,12 +11,10 @@ from models import Rating
 from models import ReadingList
 from models import User
 
-
 DATA_DIR = "data/good_books_10k_extended/"
 BOOK_FILE_NAME = DATA_DIR + "books_enriched.csv"
 RATINGS_FILE_NAME = DATA_DIR + "ratings.csv"
 READING_LIST_FILE_NAME = DATA_DIR + "to_read.csv"
-DATABASE_URI = "sqlite+pysqlite:///data/db/test.db"
 
 
 def create_book_df() -> pd.DataFrame:
@@ -24,17 +23,13 @@ def create_book_df() -> pd.DataFrame:
                 "language_code", "original_publication_year", "pages", "title"]
 
     book_df = pd.read_csv(
-        BOOK_FILE_NAME,
-        usecols=use_cols,
+        BOOK_FILE_NAME, usecols=use_cols,
         dtype={"pages": "Int16", "isbn": "string", "isbn13": "string", "publishDate": "string",
-               "original_publication_year": "Int16",
-               },
-    )
+               "original_publication_year": "Int16", }, )
     # Reorder columns to be in same order as database table declaration
     book_df = book_df[
         ["book_id", "authors", "best_book_id", "title", "description", "isbn", "isbn13", "language_code", "genres",
-         "pages", "image_url",
-         "original_publication_year"]]
+         "pages", "image_url", "original_publication_year"]]
 
     # Convert to python lists
     book_df["authors"] = book_df["authors"].apply(eval)
@@ -115,8 +110,9 @@ def export_fake_user_data():
 
 
 def main():
-    engine = create_engine(DATABASE_URI)
+    engine = create_engine(settings.database_url, execution_options={"autocommit": False})
     Base.metadata.create_all(engine)
+
     book_df = create_book_df()
     print("Exporting book data")
     export_book_data(book_df)
