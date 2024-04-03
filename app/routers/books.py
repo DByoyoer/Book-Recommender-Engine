@@ -11,9 +11,8 @@ router = APIRouter(
 )
 
 
-@router.get("/{book_id}")
+@router.get("/{book_id}", response_model=BookSchema)
 async def get_book(book_id: int, db_session: AsyncSession = Depends(get_db_session)):
     book = await Book.get_by_id(db_session, book_id)
-    print(book.authors)
     return book
 

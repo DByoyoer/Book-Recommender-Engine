@@ -5,10 +5,13 @@ from pydantic import BaseModel
 class AuthorSchema(BaseModel):
     id: int
     name: str
-    books: list[BookSchema] = []
+
+class GenreSchema(BaseModel):
+    id: int
+    name: str
 
 class BookSchema(BaseModel):
     id: int
     title: str
-    genres: list[str]
+    genres: list[GenreSchema]
     authors: list[AuthorSchema]
