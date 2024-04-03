@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from . import Base
 
 # TODO: Convert this to association object to include an 'order' field to indicate correct order to list the authors
-book_author_association = Table("book_authors", Base.metadata,
+book_author_association = Table("book_author", Base.metadata,
                                 Column("book_id", ForeignKey("book.id"), primary_key=True),
                                 Column("author_id", ForeignKey("author.id"), primary_key=True)
                                 )
