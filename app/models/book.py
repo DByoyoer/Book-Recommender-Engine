@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from sqlalchemy import ForeignKey, String, Table, Column, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 
 from . import Base
 
@@ -31,8 +31,8 @@ class Book(Base):
     pages: Mapped[int | None]
     cover_url: Mapped[str | None]
     original_publication_year: Mapped[int | None]
-    authors: Mapped[List["Author"]] = relationship(secondary=book_author_association, back_populates="books")
-    genres: Mapped[List["Genre"]] = relationship(secondary=book_genre_association, back_populates="books")
+    authors: Mapped[List["Author"]] = relationship(secondary=book_author_association, back_populates="books", lazy="selectin")
+    genres: Mapped[List["Genre"]] = relationship(secondary=book_genre_association, back_populates="books", lazy="selectin")
 
     @classmethod
     async def get_by_id(cls, db_session: AsyncSession, book_id: int):
