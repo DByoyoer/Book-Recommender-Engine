@@ -13,7 +13,7 @@ class RatingSchema(BaseModel):
 
 
 class ReadingListEntrySchema(BaseModel):
-    book: BookSchema
+    book_id: int
     ranking: int = 0
     date_added: datetime
 
