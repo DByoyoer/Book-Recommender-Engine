@@ -14,5 +14,5 @@ class User(Base):
     username: Mapped[str]
     date_created: Mapped[datetime] = mapped_column(server_default = func.now())
 
-    ratings: Mapped[List["Rating"]] = relationship(back_populates="user")
-    reading_list: Mapped[List["ReadingList"]] = relationship(back_populates="user")
+    ratings: Mapped[List["Rating"]] = relationship(back_populates="user", lazy="selectin")
+    reading_list: Mapped[List["ReadingList"]] = relationship(back_populates="user", lazy="selectin")
