@@ -1,17 +1,27 @@
 from __future__ import annotations
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-
-class AuthorSchema(BaseModel):
-    id: int
-    name: str
 
 class GenreSchema(BaseModel):
     id: int
     name: str
 
-class BookSchema(BaseModel):
+
+class AuthorBase(BaseModel):
+    id: int
+    name: str
+
+
+class AuthorFullSchema(AuthorBase):
+    books: list[BookBase]
+
+
+class BookBase(BaseModel):
     id: int
     title: str
+    cover_url: str
     genres: list[GenreSchema]
-    authors: list[AuthorSchema]
+
+
+class BookSchema(BookBase):
+    authors: list[AuthorBase]
