@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from sqlalchemy import ForeignKey, String, Table, Column, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from . import Base
 
