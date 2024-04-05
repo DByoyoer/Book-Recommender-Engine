@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select, delete, and_
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import User, Book, ReadingList, Rating
@@ -44,6 +45,21 @@ async def add_rating(user_id: int, rating: RatingSchema, db_session: AsyncSessio
     user.ratings.append(rating)
     await db_session.commit()
     return {"message": "created"}
+
+
+@router.put("/{user_id}/ratings/{book_id}")
+async def update_rating(
+        user_id: int, book_id: int, rating: RatingSchema, db_session: AsyncSession = Depends(get_db_session)
+):
+    user = await db_session.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    db_rating = rating.model_dump()
+    db_rating["user_id"] = user_id
+    stmt = insert(Rating).values(db_rating).on_conflict_do_update(constraint="pk_rating", set_=db_rating)
+    await db_session.execute(stmt)
+    await db_session.commit()
+    return {"message": "rating updated"}
 
 
 @router.get("/{user_id}/reading_list", response_model=list[ReadingListEntrySchema])
