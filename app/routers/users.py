@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select, delete, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import User, Book, ReadingList
+from models import User, Book, ReadingList, Rating
 from schemas.book import BookSchema
 from schemas.user import RatingSchema, ReadingListEntrySchema, UserCreateSchema
 from services.database import get_db_session
@@ -35,6 +35,17 @@ async def get_user_ratings(user_id: int, db_session: AsyncSession = Depends(get_
     return user.ratings
 
 
+@router.post("/{user_id}/ratings", status_code=status.HTTP_201_CREATED)
+async def add_rating(user_id: int, rating: RatingSchema, db_session: AsyncSession = Depends(get_db_session)):
+    user = await db_session.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    rating = Rating(user_id=user_id, **rating.model_dump())
+    user.ratings.append(rating)
+    await db_session.commit()
+    return {"message": "created"}
+
+
 @router.get("/{user_id}/reading_list", response_model=list[ReadingListEntrySchema])
 async def get_user_reading_list(user_id: int, db_session: AsyncSession = Depends(get_db_session)):
     user = await db_session.get(User, user_id)
@@ -58,10 +69,11 @@ async def add_new_reading_list_entry(
 @router.delete("/{user_id}/reading_list/{book_id}", status_code=status.HTTP_200_OK)
 async def remove_book_from_reading_list(user_id: int, book_id: int, db_session: AsyncSession = Depends(get_db_session)):
     await db_session.execute(
-        delete(ReadingList).where(and_(ReadingList.user_id ==user_id, ReadingList.book_id==book_id))
+        delete(ReadingList).where(and_(ReadingList.user_id == user_id, ReadingList.book_id == book_id))
     )
     await db_session.commit()
     return {"Message": "Deleted"}
+
 
 @router.get("/{user_id}/recs", response_model=list[BookSchema])
 async def get_user_recs(user_id: int, db_session: AsyncSession = Depends(get_db_session)):
