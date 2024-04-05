@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import User, Book
 from schemas.book import BookSchema
-from schemas.user import RatingSchema, ReadingListEntrySchema
+from schemas.user import RatingSchema, ReadingListEntrySchema, UserCreateSchema
 from services.database import get_db_session
 import random
 
@@ -12,6 +12,14 @@ router = APIRouter(
     prefix="/users",
     tags=["users"],
 )
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_user(user: UserCreateSchema, db_session: AsyncSession = Depends(get_db_session)):
+    new_user = User(username=user.username)
+    db_session.add(new_user)
+    await db_session.commit()
+    return {"id": new_user.id, "username": new_user.username}
 
 
 @router.get("/{user_id}")
