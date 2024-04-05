@@ -23,3 +23,6 @@ class UserSchema(BaseModel):
     username: str
     ratings: list[RatingSchema]
     reading_list: list[ReadingListEntrySchema]
+
+class UserCreateSchema(BaseModel):
+    username: str
