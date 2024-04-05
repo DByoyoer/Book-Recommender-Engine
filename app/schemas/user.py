@@ -6,10 +6,10 @@ from .book import BookSchema
 
 class RatingSchema(BaseModel):
     book_id: int
-    score: int
+    score: float
     rating_text: str | None = ""
-    date_created: datetime
-    date_updated: datetime
+    date_created: datetime|None
+    date_updated: datetime|None
 
 
 class ReadingListEntrySchema(BaseModel):
