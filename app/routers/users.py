@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import User
+from models import User, Book
 from schemas.book import BookSchema
 from schemas.user import RatingSchema, ReadingListEntrySchema
 from services.database import get_db_session
+import random
 
 router = APIRouter(
     prefix="/users",
@@ -30,5 +32,10 @@ async def get_user_reading_list(user_id: int, db_session: AsyncSession = Depends
 
 
 @router.get("/{user_id}/recs", response_model=list[BookSchema])
-async def get_user_recs(user_id: int):
-    pass
+async def get_user_recs(user_id: int, db_session: AsyncSession = Depends(get_db_session)):
+    # TODO: Actually utilize a recommendation engine :)
+    rec_ids = random.choices(range(1, 10001), k=25)
+    books = await db_session.scalars(
+        select(Book).where(Book.id.in_(rec_ids))
+    )
+    return books.all()
