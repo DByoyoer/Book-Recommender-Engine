@@ -25,3 +25,13 @@ class BookBase(BaseModel):
 
 class BookSchema(BookBase):
     authors: list[AuthorBase]
+
+
+class BookDetailedSchema(BookBase):
+    authors: list[AuthorBase]
+    description: str
+    isbn: str | None = ""
+    isbn13: str | None = ""
+    lang_code: str
+    pages: int
+    original_publication_year: int | None
