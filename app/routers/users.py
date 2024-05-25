@@ -61,6 +61,14 @@ async def update_rating(
     await db_session.commit()
     return {"message": "rating updated"}
 
+@router.delete("/{user_id}/ratings/{book_id}")
+async def delete_rating(user_id: int, book_id: int, db_session: AsyncSession = Depends(get_db_session)):
+    await db_session.execute(
+        delete(Rating).where(and_(Rating.user_id == user_id, Rating.book_id == book_id))
+    )
+    await db_session.commit()
+    return {"Message": "Deleted"}
+
 
 @router.get("/{user_id}/reading_list", response_model=list[ReadingListEntrySchema])
 async def get_user_reading_list(user_id: int, db_session: AsyncSession = Depends(get_db_session)):
