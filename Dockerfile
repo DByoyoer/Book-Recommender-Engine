@@ -1,4 +1,4 @@
-FROM amancevice/pandas:slim
+FROM amancevice/pandas
 
 RUN mkdir /backend
 WORKDIR /backend
