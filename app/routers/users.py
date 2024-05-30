@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import User, Book, ReadingList, Rating
 from schemas.book import BookSchema
 from schemas.user import RatingSchema, ReadingListEntrySchema, UserCreateSchema
+from services import ml_models
 from services.database import get_db_session
 import random
 
@@ -61,6 +62,7 @@ async def update_rating(
     await db_session.commit()
     return {"message": "rating updated"}
 
+
 @router.delete("/{user_id}/ratings/{book_id}")
 async def delete_rating(user_id: int, book_id: int, db_session: AsyncSession = Depends(get_db_session)):
     await db_session.execute(
@@ -101,9 +103,12 @@ async def remove_book_from_reading_list(user_id: int, book_id: int, db_session: 
 
 @router.get("/{user_id}/recs", response_model=list[BookSchema])
 async def get_user_recs(user_id: int, db_session: AsyncSession = Depends(get_db_session)):
-    # TODO: Actually utilize a recommendation engine :)
-    rec_ids = random.choices(range(1, 10001), k=25)
+    predictions = [ml_models["svd"].predict(user_id, book_id) for book_id in range(1, 10001)]
+    predictions = filter(lambda pred: pred.r_ui is None, predictions)
+    predictions = list(sorted(predictions, key=lambda pred: pred.est, reverse=True))[:50]
+    print(predictions[:10])
+    ids = [book_id for uid, book_id, _, _, _ in predictions]
     books = await db_session.scalars(
-        select(Book).where(Book.id.in_(rec_ids))
+        select(Book).where(Book.id.in_(ids))
     )
     return books.all()
