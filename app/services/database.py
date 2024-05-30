@@ -51,6 +51,9 @@ class DatabaseSessionManager:
         finally:
             await session.close()
 
+    def engine_exists(self):
+        return self._engine is not None
+
 
 sessionmanager = DatabaseSessionManager(settings.database_url, {"echo": settings.echo_sql})
 
