@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List
 
 from sqlalchemy import ForeignKey, String, Table, Column, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,15 +7,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from . import Base
 
 # TODO: Convert this to association object to include an 'order' field to indicate correct order to list the authors
-book_author_association = Table("book_author", Base.metadata,
-                                Column("book_id", ForeignKey("book.id"), primary_key=True),
-                                Column("author_id", ForeignKey("author.id"), primary_key=True)
-                                )
+book_author_association = Table(
+    "book_author", Base.metadata,
+    Column("book_id", ForeignKey("book.id"), primary_key=True),
+    Column("author_id", ForeignKey("author.id"), primary_key=True)
+)
 
-book_genre_association = Table("book_genre", Base.metadata,
-                               Column("book_id", ForeignKey("book.id"), primary_key=True),
-                               Column("genre_id", ForeignKey("genre.id"), primary_key=True)
-                               )
+book_genre_association = Table(
+    "book_genre", Base.metadata,
+    Column("book_id", ForeignKey("book.id"), primary_key=True),
+    Column("genre_id", ForeignKey("genre.id"), primary_key=True)
+)
 
 
 # noinspection SpellCheckingInspection
@@ -31,12 +33,16 @@ class Book(Base):
     pages: Mapped[int | None]
     cover_url: Mapped[str | None]
     original_publication_year: Mapped[int | None]
-    authors: Mapped[List["Author"]] = relationship(secondary=book_author_association, back_populates="books", lazy="selectin")
-    genres: Mapped[List["Genre"]] = relationship(secondary=book_genre_association, back_populates="books", lazy="selectin")
+    authors: Mapped[List["Author"]] = relationship(
+        secondary=book_author_association, back_populates="books", lazy="selectin"
+    )
+    genres: Mapped[List["Genre"]] = relationship(
+        secondary=book_genre_association, back_populates="books", lazy="selectin"
+    )
 
     @classmethod
     async def get_by_id(cls, db_session: AsyncSession, book_id: int):
-        book =  await db_session.get(cls, book_id)
+        book = await db_session.get(cls, book_id)
         return book
 
     @classmethod
@@ -48,3 +54,5 @@ class Book(Base):
     async def get_list(cls, db_session: AsyncSession, book_ids: list[int]):
         result = await db_session.scalars(select(cls).where(cls.id.in_(list)))
         return result.all()
+
+#TODO: Create fts tables for book title and columns to speed up search

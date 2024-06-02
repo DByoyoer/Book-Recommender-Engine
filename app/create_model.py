@@ -1,6 +1,4 @@
-import os
 import pandas as pd
-import psycopg
 
 from surprise import Dataset, dump, Reader, SVD
 
