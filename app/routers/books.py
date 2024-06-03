@@ -1,10 +1,10 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy import select
+from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import Book, Genre
+from models import Book, Genre, Rating
 from models.book import book_genre_association
 from schemas.book import BookDetailedSchema, BookSchema
 from services.database import get_db_session
@@ -15,6 +15,24 @@ router = APIRouter(
 )
 
 
+@router.get("/top_books", response_model=list[BookSchema])
+async def get_top_n_books(
+        n: Annotated[int, Query(le=50, ge=5)] = 10,
+        db_session: AsyncSession = Depends(get_db_session)
+):
+    sub_query = select(
+        Rating.book_id, func.avg(Rating.score).label("avg_rating"), func.count(Rating.book_id).label("rating_count")
+    ).group_by(Rating.book_id).having(func.count(Rating.book_id) > 100).order_by(
+        desc("avg_rating")
+    ).limit(n).subquery()
+    stmt = select(Book, sub_query.c.avg_rating).join(sub_query, sub_query.c.book_id == Book.id).order_by(
+        desc(sub_query.c.avg_rating)
+    )
+
+    top_10_books = await db_session.scalars(stmt)
+    return top_10_books.all()
+
+
 @router.get("/{book_id}", response_model=BookDetailedSchema)
 async def get_book(book_id: int, db_session: AsyncSession = Depends(get_db_session)):
     book = await Book.get_by_id(db_session, book_id)
@@ -23,7 +41,7 @@ async def get_book(book_id: int, db_session: AsyncSession = Depends(get_db_sessi
     return book
 
 
-@router.get("/", response_model=list[BookSchema])
+@router.get("", response_model=list[BookSchema])
 async def search_books(
         q: Annotated[str, Query(min_length=1, max_length=100)],
         genre_filters: Annotated[list[str], None, Query()] = None,
