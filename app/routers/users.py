@@ -1,9 +1,11 @@
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends, status, HTTPException
-from sqlalchemy import select, delete, and_
+from sqlalchemy import select, delete, and_, asc, desc
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import User, Book, ReadingList, Rating
+from models import User, Book, ReadingList, Rating, TopRecommendations
 from schemas.book import BookSchema
 from schemas.user import RatingSchema, ReadingListEntrySchema, UserCreateSchema
 from services import ml_models
@@ -103,12 +105,34 @@ async def remove_book_from_reading_list(user_id: int, book_id: int, db_session: 
 
 @router.get("/{user_id}/recs", response_model=list[BookSchema])
 async def get_user_recs(user_id: int, db_session: AsyncSession = Depends(get_db_session)):
-    predictions = [ml_models["svd"].predict(user_id, book_id) for book_id in range(1, 10001)]
-    predictions = filter(lambda pred: pred.r_ui is None, predictions)
-    predictions = list(sorted(predictions, key=lambda pred: pred.est, reverse=True))[:50]
-    print(predictions[:10])
-    ids = [book_id for uid, book_id, _, _, _ in predictions]
-    books = await db_session.scalars(
-        select(Book).where(Book.id.in_(ids))
-    )
-    return books.all()
+    top_recs_stmt = select(Book, TopRecommendations.date_predicted).join_from(Book, TopRecommendations, Book.id == TopRecommendations.book_id).where(
+        TopRecommendations.user_id == user_id
+        ).order_by(desc(TopRecommendations.prediction))
+    top_recs = (await db_session.execute(top_recs_stmt)).all()
+    # Top recs not cached or outdated
+    if len(top_recs) == 0 or _datetime_outdated(top_recs[0][1]):
+        await db_session.execute(delete(TopRecommendations).where(TopRecommendations.user_id == user_id))
+        await db_session.commit()
+        # Get all of the book ids of books the user has rated
+        stmt = select(Rating.book_id).where(Rating.user_id == user_id)
+        res = await db_session.execute(stmt)
+        rated_book_ids = set(map(lambda row: row[0], res.all()))
+
+        # Get the set of all book ids that the user has not rated, works since the ids are continuous and max is known
+        book_ids = set(range(1, 10001))
+        non_rated_book_ids = book_ids.difference(rated_book_ids)
+
+        predictions = [ml_models["svd"].predict(user_id, book_id) for book_id in non_rated_book_ids]
+        predictions = list(sorted(predictions, key=lambda pred: pred.est, reverse=True))[:50]
+        predictions = list(
+            map(lambda pred: TopRecommendations(user_id=user_id, book_id=pred[1], prediction=pred[3]), predictions)
+        )
+        db_session.add_all(predictions)
+        await db_session.commit()
+        top_recs = (await db_session.execute(top_recs_stmt)).all()
+
+    top_recs = [row[0] for row in top_recs]
+    return top_recs
+
+def _datetime_outdated(past: datetime, duration: timedelta = timedelta(days=1)):
+    return datetime.now() - past > duration

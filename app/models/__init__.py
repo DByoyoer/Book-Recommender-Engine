@@ -18,3 +18,4 @@ from .genre import Genre
 from .rating import Rating
 from .reading_list import ReadingList
 from .user import User
+from .top_recs import TopRecommendations
