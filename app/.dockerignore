@@ -1,0 +1,9 @@
+# .dockerignore
+../data_exploration.ipynb
+README.md
+environment.yml
+.git*
+**/*.pyc
+data/*.csv
+data/good_books_10k_extended/
+docker-compose.yml

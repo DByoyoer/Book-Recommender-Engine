@@ -13,7 +13,7 @@ from services.database import sessionmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    _, ml_models["svd"] = dump.load("app/data/svd_model.dump")
+    _, ml_models["svd"] = dump.load("data/svd_model.dump")
     yield
     if sessionmanager.engine_exists():
         await sessionmanager.close()

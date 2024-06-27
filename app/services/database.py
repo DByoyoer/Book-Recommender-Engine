@@ -2,6 +2,7 @@ import contextlib
 from typing import Any, AsyncIterator
 
 from config import settings
+from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncSession,
@@ -13,8 +14,8 @@ from sqlalchemy.ext.asyncio import (
 # Code from https://medium.com/@tclaitken/setting-up-a-fastapi-app-with-async-sqlalchemy-2-0-pydantic-v2-e6c540be4308 and
 # https://praciano.com.br/fastapi-and-async-sqlalchemy-20-with-pytest-done-right.html=
 class DatabaseSessionManager:
-    def __init__(self, host: str, engine_kwargs: dict[str, Any] = {}):
-        self._engine = create_async_engine(host, **engine_kwargs)
+    def __init__(self, con_url: URL, engine_kwargs: dict[str, Any] = {}):
+        self._engine = create_async_engine(con_url, **engine_kwargs)
         self._sessionmaker = async_sessionmaker(autocommit=False, bind=self._engine, expire_on_commit=False)
 
     async def close(self):

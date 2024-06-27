@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.get("/top_books", response_model=list[BookSchema])
+@router.get("/top", response_model=list[BookSchema])
 async def get_top_n_books(
         n: Annotated[int, Query(le=50, ge=5)] = 10,
         db_session: AsyncSession = Depends(get_db_session)
@@ -25,6 +25,7 @@ async def get_top_n_books(
     ).group_by(Rating.book_id).having(func.count(Rating.book_id) > 100).order_by(
         desc("avg_rating")
     ).limit(n).subquery()
+
     stmt = select(Book, sub_query.c.avg_rating).join(sub_query, sub_query.c.book_id == Book.id).order_by(
         desc(sub_query.c.avg_rating)
     )

@@ -17,7 +17,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python app/main.py
+    command: gunicorn main:app
     tty: true
     volumes:
       - ./:/backend/:cached
