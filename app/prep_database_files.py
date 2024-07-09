@@ -9,6 +9,7 @@ from models import Genre
 from models import Rating
 from models import ReadingList
 from models import User
+from models import TopRecommendations
 
 DATA_DIR = "data/good_books_10k_extended/"
 BOOK_FILE_NAME = DATA_DIR + "books_enriched.csv"
